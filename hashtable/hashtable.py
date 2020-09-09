@@ -2,6 +2,7 @@ class HashTableEntry:
     """
     Linked List hash table key/value pair
     """
+
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -22,7 +23,9 @@ class HashTable:
 
     def __init__(self, capacity):
         # Your code here
-
+        self.capacity = capacity
+        self.bucket = [None] * capacity
+        self.count = 0
 
     def get_num_slots(self):
         """
@@ -35,7 +38,7 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
+        return len(self.bucket)
 
     def get_load_factor(self):
         """
@@ -44,7 +47,8 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
+        # load factor = # items / # total slots
+        return self.count / self.get_num_slots()
 
     def fnv1(self, key):
         """
@@ -54,7 +58,14 @@ class HashTable:
         """
 
         # Your code here
+        prime = 1099511628211
+        hash = 14695981039346656037
 
+        for char in key:
+            hash = hash * prime
+            hash = hash ^ ord(char)
+
+        return hash
 
     def djb2(self, key):
         """
@@ -63,14 +74,18 @@ class HashTable:
         Implement this, and/or FNV-1.
         """
         # Your code here
+        hash = 5381
+        for char in key:
+            hash = (hash * 33) + ord(char)
 
+        return hash & 0xffffffff
 
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
+        # return self.fnv1(key) % self.capacity
         return self.djb2(key) % self.capacity
 
     def put(self, key, value):
@@ -82,7 +97,35 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        # Day 1
+        # index = self.hash_index(key)
+        # self.bucket[index] = value
 
+        # Day 2
+        index = self.hash_index(key)
+        new_node = HashTableEntry(key, value)
+        cur_node = self.bucket[index]
+
+        if self.bucket[index] == None:
+            self.bucket[index] = new_node
+            self.count += 1
+
+        elif self.bucket[index] is not None and self.bucket[index].key == key:
+            self.bucket[index].value = value
+
+        elif self.bucket[index] is not None:
+            while cur_node is not None:
+                if cur_node.next is None:
+                    cur_node.next = new_node
+                    self.count += 1
+                    return cur_node
+
+                elif cur_node.next is not None and cur_node.next.key == key:
+                    cur_node.next.value = value
+                    return cur_node.next
+
+                else:
+                    cur_node = cur_node.next
 
     def delete(self, key):
         """
@@ -93,7 +136,41 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        # Day 1
+        # index = self.hash_index(key)
+        #self.bucket[index] = None
 
+        # Day 2
+        index = self.hash_index(key)
+        is_node = True
+        cur_node = self.bucket[index]
+        prev_node = None
+
+        while cur_node is not None:
+            if cur_node.key == key:
+                if is_node:
+                    if cur_node.next == None:
+                        self.bucket[index] = None
+                        cur_node = None
+                    else:
+                        self.bucket[index] = cur_node.next
+                        cur_node = None
+                else:
+                    if cur_node.next == None:
+                        prev_node.next = None
+                        cur_node = None
+                    else:
+                        prev_node.next = cur_node.next
+                        cur_node = None
+                return
+
+            is_node = False
+
+            if cur_node.next == None:
+                return
+
+            prev_node = cur_node
+            cur_node = cur_node.next
 
     def get(self, key):
         """
@@ -104,7 +181,24 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        # Day 1
+        # index = self.hash_index(key)
+        # return self.bucket[index]
 
+        # Day 2
+        index = self.hash_index(key)
+        cur_node = self.bucket[index]
+
+        if cur_node is not None and cur_node.key == key:
+            return cur_node.value
+        else:
+            while cur_node is not None:
+                if cur_node.key == key:
+                    return cur_node.value
+
+                cur_node = cur_node.next
+
+        return None
 
     def resize(self, new_capacity):
         """
@@ -114,7 +208,24 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        new_bucket = [None] * new_capacity
+        cur_bucket = self.bucket
+        self.bucket = new_bucket
+        self.count = 0
+        self.capacity = new_capacity
+        index = 0
 
+        while index < len(cur_bucket):
+            cur_node = cur_bucket[index]
+
+            if cur_node is not None:
+                next_node = cur_node.next
+                cur_node.next = None
+                self.put(cur_node.key, cur_node.value)
+                cur_bucket[index] = next_node
+
+            elif cur_node is None:
+                index += 1
 
 
 if __name__ == "__main__":
